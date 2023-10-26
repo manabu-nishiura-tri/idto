@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   idto::examples::dual_jaco_large_box::DualJacoLargeBoxExample example;
-  example.RunExample("idto/examples/dual_jaco_large_box.yaml", FLAGS_test);
+  example.RunExample("idto/examples/dual_jaco_large_box/dual_jaco_large_box.yaml", FLAGS_test);
 
   return 0;
 }
