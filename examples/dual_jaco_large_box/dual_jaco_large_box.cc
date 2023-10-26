@@ -60,7 +60,7 @@ class DualJacoLargeBoxExample : public TrajOptExample {
 
    // Add a manipuland
     std::string manipuland_file =
-      idto::FindIdtoResourceOrThrow("idto/examples/models/box_with_lid_large.sdf");
+      idto::FindIdtoResourceOrThrow("idto/examples/models/box_15cm.sdf");
     Parser(plant).AddModels(manipuland_file);
     
     // Add the ground
@@ -102,7 +102,7 @@ class DualJacoLargeBoxExample : public TrajOptExample {
 
     // Add a manipuland with compliant hydroelastic contact
     std::string manipuland_file = idto::FindIdtoResourceOrThrow(
-        "idto/examples/models/box_with_lid_large.sdf");
+        "idto/examples/models/box_15cm.sdf");
     Parser(plant).AddModels(manipuland_file);
 
     // Add the ground with compliant hydroelastic contact

@@ -9,6 +9,7 @@ cc_binary(
     srcs = ["dual_jaco.cc"],
     data = [
         ":dual_jaco.yaml",
+        ":dual_jaco_lifting.yaml",
         "//examples:models",
         "@drake//manipulation/models/jaco_description:models",
     ],

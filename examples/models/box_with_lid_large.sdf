@@ -29,9 +29,14 @@
 
       <visual name="box_visual">
         <geometry>
+          <sphere>
+            <radius>0.17</radius>
+          </sphere>
+          <!--
           <box>
             <size>0.41 0.315 0.2604</size>
           </box>
+          -->
         </geometry>
         <material>
           <diffuse>0.8 0.2 0.2 0.5</diffuse>
@@ -39,9 +44,14 @@
       </visual>
       <collision name="box_collision">
         <geometry>
+          <sphere>
+            <radius>0.17</radius>
+          </sphere>  
+          <!--
           <box>
             <size>0.41 0.315 0.2604</size>
           </box>
+          -->
         </geometry>
         <surface>
           <friction>
