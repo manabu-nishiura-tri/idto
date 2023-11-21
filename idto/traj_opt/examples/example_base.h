@@ -56,7 +56,7 @@ class TrajOptExample {
    * @return TrajectoryOptimizerSolution<double> the optimal trajectory
    */
   TrajectoryOptimizerSolution<double> SolveTrajectoryOptimization(
-      const TrajOptExampleParams& options) const;
+      const TrajOptExampleParams& options, const std::string station_name) const;
 
   /**
    * Use the optimizer as an MPC controller in simulation.
@@ -115,7 +115,7 @@ class TrajOptExample {
    *
    * @param plant the MultibodyPlant that we'll add the system to.
    */
-  virtual void CreatePlantModel(MultibodyPlant<double>*) const {}
+  virtual void CreatePlantModel(MultibodyPlant<double>*, const std::string station_name = "symphony") const {}
 
   /**
    * Update any custom meshcat visualizations, such as a frame that illustrates

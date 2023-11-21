@@ -85,6 +85,7 @@ struct TrajOptExampleParams {
     a->Visit(DRAKE_NVP(q_nom_relative_to_q_init));
     a->Visit(DRAKE_NVP(save_mpc_result_as_static_html));
     a->Visit(DRAKE_NVP(static_html_filename));
+    a->Visit(DRAKE_NVP(station_name));
   }
   // Initial state
   VectorXd q_init;
@@ -192,6 +193,8 @@ struct TrajOptExampleParams {
   double sim_time{10.0};            // Time to simulate for, in seconds
   double sim_time_step{1e-3};       // Simulator time step
   double sim_realtime_rate{1.0};    // Simulator realtime rate
+
+  std::string station_name;
 
   // Gains for the low-level PD+ controller that operates between MPC
   // iterations. Terms related to unactuated DoFs are ignored.

@@ -41,7 +41,7 @@ void TrajOptExample::RunExample(const std::string options_file) const {
   } else {
     // Solve a single instance of the optimization problem and play back the
     // result on the visualizer
-    SolveTrajectoryOptimization(options);
+    SolveTrajectoryOptimization(options, options.station_name);
   }
 }
 
@@ -51,7 +51,7 @@ void TrajOptExample::RunModelPredictiveControl(
   // warm-start the first MPC iteration. Subsequent MPC iterations will be
   // warm-started based on the prior MPC iteration.
   TrajectoryOptimizerSolution<double> initial_solution =
-      SolveTrajectoryOptimization(options);
+      SolveTrajectoryOptimization(options, options.station_name);
 
   // Set up the system diagram for the simulator
   DiagramBuilder<double> builder;
@@ -179,14 +179,14 @@ void TrajOptExample::RunModelPredictiveControl(
 }
 
 TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
-    const TrajOptExampleParams& options) const {
+    const TrajOptExampleParams& options, const std::string station_name) const {
   // Create a system model
   // N.B. we need a whole diagram, including scene_graph, to handle contact
   DiagramBuilder<double> builder;
   MultibodyPlantConfig config;
   config.time_step = options.time_step;
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
-  CreatePlantModel(&plant);
+  CreatePlantModel(&plant, station_name);
   plant.Finalize();
   const int nv = plant.num_velocities();
 
