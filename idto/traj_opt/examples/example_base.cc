@@ -217,10 +217,10 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
   // Visualize the target trajectory and initial guess, if requested
   if (options.play_target_trajectory) {
-    PlayBackTrajectory(opt_prob.q_nom, options.time_step);
+    PlayBackTrajectory(opt_prob.q_nom, options.time_step, station_name);
   }
   if (options.play_initial_guess) {
-    PlayBackTrajectory(q_guess, options.time_step);
+    PlayBackTrajectory(q_guess, options.time_step, station_name);
   }
 
   // Solve the optimzation problem
@@ -311,7 +311,7 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
   // Play back the result on the visualizer
   if (options.play_optimal_trajectory) {
-    PlayBackTrajectory(solution.q, options.time_step);
+    PlayBackTrajectory(solution.q, options.time_step, station_name);
   }
 
   return solution;
@@ -319,7 +319,7 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
 void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
                                         const double time_step,
-                                        const std::strin station_name) const {
+                                        const std::string station_name) const {
   // Create a system diagram that includes the plant and is connected to
   // the meshcat visualizer
   DiagramBuilder<double> builder;
