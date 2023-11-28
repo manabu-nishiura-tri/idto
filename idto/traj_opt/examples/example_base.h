@@ -115,7 +115,7 @@ class TrajOptExample {
    *
    * @param plant the MultibodyPlant that we'll add the system to.
    */
-  virtual void CreatePlantModel(MultibodyPlant<double>*, const std::string station_name = "symphony") const {}
+  virtual void CreatePlantModel(MultibodyPlant<double>*, const std::string station_name) const {}
 
   /**
    * Update any custom meshcat visualizations, such as a frame that illustrates
@@ -133,8 +133,8 @@ class TrajOptExample {
    * @param plant the MultibodyPlant that we'll add the system to.
    */
   virtual void CreatePlantModelForSimulation(
-      MultibodyPlant<double>* plant) const {
-    CreatePlantModel(plant);
+      MultibodyPlant<double>* plant, const std::string station_name) const {
+    CreatePlantModel(plant, station_name);
   }
 
   /**
@@ -144,7 +144,8 @@ class TrajOptExample {
    * @param time_step time step (seconds) for the discretization
    */
   void PlayBackTrajectory(const std::vector<VectorXd>& q,
-                          const double time_step) const;
+                          const double time_step,
+                          const std::string station_name) const;
 
   /**
    * Return a vector that interpolates linearly between q_start and q_end.

@@ -60,7 +60,7 @@ void TrajOptExample::RunModelPredictiveControl(
   MultibodyPlantConfig config;
   config.time_step = options.sim_time_step;
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
-  CreatePlantModelForSimulation(&plant);
+  CreatePlantModelForSimulation(&plant, options.station_name);
   plant.Finalize();
 
   const int nq = plant.num_positions();
@@ -77,7 +77,7 @@ void TrajOptExample::RunModelPredictiveControl(
   ctrl_config.time_step = options.time_step;
   auto [ctrl_plant, ctrl_scene_graph] =
       AddMultibodyPlant(ctrl_config, &ctrl_builder);
-  CreatePlantModel(&ctrl_plant);
+  CreatePlantModel(&ctrl_plant, options.station_name);
   ctrl_plant.Finalize();
   auto ctrl_diagram = ctrl_builder.Build();
 
@@ -318,7 +318,8 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 }
 
 void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
-                                        const double time_step) const {
+                                        const double time_step,
+                                        const std::strin station_name) const {
   // Create a system diagram that includes the plant and is connected to
   // the meshcat visualizer
   DiagramBuilder<double> builder;
@@ -326,7 +327,7 @@ void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
   config.time_step = time_step;
 
   auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
-  CreatePlantModel(&plant);
+  CreatePlantModel(&plant, station_name);
   plant.Finalize();
 
   auto& visualizer =
