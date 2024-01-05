@@ -19,6 +19,7 @@
 #include <drake/systems/analysis/simulator.h>
 #include <drake/systems/framework/diagram_builder.h>
 
+
 namespace idto {
 namespace examples {
 
@@ -69,6 +70,7 @@ class TrajOptExample {
    *   - play_optimal_trajectory = false
    *   - num_threads = 1; */
   void RunExample(const std::string options_file,
+                  const std::vector<VectorXd> trajectory,
                   const bool test = false) const;
 
   /**
@@ -80,7 +82,8 @@ class TrajOptExample {
    * @return TrajectoryOptimizerSolution<double> the optimal trajectory
    */
   TrajectoryOptimizerSolution<double> SolveTrajectoryOptimization(
-      const TrajOptExampleParams& options) const;
+      const TrajOptExampleParams& options,
+      const std::vector<VectorXd> trajectory) const;
 
   /**
    * Use the optimizer as an MPC controller in simulation.
@@ -88,7 +91,8 @@ class TrajOptExample {
    * @param options YAML options, incluidng cost function definition, solver
    * parameters, etc.
    */
-  void RunModelPredictiveControl(const TrajOptExampleParams& options) const;
+  void RunModelPredictiveControl(const TrajOptExampleParams& options,
+                                 const std::vector<VectorXd> trajectory) const;
 
   /**
    * Set an optimization problem from example options which were loaded from

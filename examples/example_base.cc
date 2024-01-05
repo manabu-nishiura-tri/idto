@@ -25,6 +25,7 @@ using mpc::ModelPredictiveController;
 using pd_plus::PdPlusController;
 
 void TrajOptExample::RunExample(const std::string options_file,
+                                const std::vector<VectorXd> trajectory,
                                 const bool test) const {
   // Load parameters from file
   TrajOptExampleParams default_options;
@@ -47,21 +48,22 @@ void TrajOptExample::RunExample(const std::string options_file,
 
   if (options.mpc) {
     // Run a simulation that uses the optimizer as a model predictive controller
-    RunModelPredictiveControl(options);
+    RunModelPredictiveControl(options, trajectory);
   } else {
     // Solve a single instance of the optimization problem and play back the
     // result on the visualizer
-    SolveTrajectoryOptimization(options);
+    SolveTrajectoryOptimization(options, trajectory);
   }
 }
 
 void TrajOptExample::RunModelPredictiveControl(
-    const TrajOptExampleParams& options) const {
+    const TrajOptExampleParams& options,
+    const std::vector<VectorXd> trajectory) const {
   // Perform a full solve to convergence (as defined by YAML parameters) to
   // warm-start the first MPC iteration. Subsequent MPC iterations will be
   // warm-started based on the prior MPC iteration.
   TrajectoryOptimizerSolution<double> initial_solution =
-      SolveTrajectoryOptimization(options);
+      SolveTrajectoryOptimization(options, trajectory);
 
   // Set up the system diagram for the simulator
   DiagramBuilder<double> builder;
@@ -186,7 +188,8 @@ void TrajOptExample::RunModelPredictiveControl(
 }
 
 TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
-    const TrajOptExampleParams& options) const {
+    const TrajOptExampleParams& options,
+    const std::vector<VectorXd> trajectory) const {
   // Create a system model
   // N.B. we need a whole diagram, including scene_graph, to handle contact
   DiagramBuilder<double> builder;
@@ -220,14 +223,17 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
   SetSolverParameters(options, &solver_params);
 
   // Establish an initial guess
+  std::vector<VectorXd> q_guess = trajectory;
+  /*
   std::vector<VectorXd> q_guess = MakeLinearInterpolation(
       opt_prob.q_init, options.q_guess, opt_prob.num_steps + 1);
   NormalizeQuaternions(plant, &q_guess);
+  */
 
   // N.B. This should always be the case, and is checked by the solver. However,
   // sometimes floating point + normalization stuff makes q_guess != q_init, so
   // we'll just doubly enforce that here
-  DRAKE_DEMAND((q_guess[0] - opt_prob.q_init).norm() < 1e-8);
+  //DRAKE_DEMAND((q_guess[0] - opt_prob.q_init).norm() < 1e-8);
   q_guess[0] = opt_prob.q_init;
 
   // Visualize the target trajectory and initial guess, if requested
@@ -235,6 +241,7 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
     PlayBackTrajectory(opt_prob.q_nom, options.time_step);
   }
   if (options.play_initial_guess) {
+    std::cout<<"Playing back initial guess."<<std::endl;
     PlayBackTrajectory(q_guess, options.time_step);
   }
 

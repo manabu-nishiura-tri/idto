@@ -27,6 +27,7 @@ using drake::AutoDiffXd;
 using drake::geometry::GeometryId;
 using drake::geometry::SignedDistancePair;
 using drake::math::RigidTransform;
+using drake::multibody::RigidBody;
 using drake::multibody::Body;
 using drake::multibody::BodyIndex;
 using drake::multibody::Frame;
@@ -2203,6 +2204,7 @@ SolverFlag TrajectoryOptimizer<double>::Solve(
 
   // The guess must be consistent with the initial condition
   DRAKE_DEMAND(q_guess[0] == prob_.q_init);
+  std::cout<<"q_guess.size: "<<q_guess.size()<<std::endl;
   DRAKE_DEMAND(static_cast<int>(q_guess.size()) == num_steps() + 1);
 
   // stats must be empty
