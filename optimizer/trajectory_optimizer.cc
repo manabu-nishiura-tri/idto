@@ -156,8 +156,12 @@ T TrajectoryOptimizer<T>::CalcCost(
 
   // Running cost
   for (int t = 0; t < num_steps(); ++t) {
+    std::cout<<"time step: "<<t;
     q_err = q[t] - prob_.q_nom[t];
     v_err = v[t] - prob_.v_nom[t];
+    std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
+    std::cout<<" v_err: "<<T(v_err.transpose() * prob_.Qv * v_err);
+    std::cout<<" tau_err: "<<T(tau[t].transpose() * prob_.R * tau[t])<<std::endl;
     cost += T(q_err.transpose() * prob_.Qq * q_err);
     cost += T(v_err.transpose() * prob_.Qv * v_err);
     cost += T(tau[t].transpose() * prob_.R * tau[t]);
@@ -2479,6 +2483,7 @@ SolverFlag TrajectoryOptimizer<double>::SolveFromWarmStart(
       "dL_dq/cost |    |h|     |";
 
   double previous_cost = EvalCost(state);
+  std::cout<<" cost of gqdp trajectory cost: "<<previous_cost<<std::endl;
   while (k < params_.max_iterations) {
     // Obtain the candiate update dq
     tr_constraint_active = CalcDoglegPoint(state, Delta, &dq, &dqH);
