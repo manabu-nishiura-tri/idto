@@ -457,6 +457,18 @@ class TrajectoryOptimizer {
     }
   }
 
+  void UpdateNominalStates(const VectorXd& new_nominal_state) {
+    //int q_nom_index = 0;
+    /*
+    for (int q_nom_index = 0; q_nom_index < prob_.q_nom.rows(); q_nom_index++) {
+      prob_.q_nom[q_nom_index] = new_nominal_state[q_nom_index];
+    }
+    */    
+    for (VectorXd& qt_nom : prob_.q_nom) {
+      qt_nom = new_nominal_state; 
+    }
+  }
+
  private:
   // Friend class to facilitate testing.
   friend class TrajectoryOptimizerTester;
