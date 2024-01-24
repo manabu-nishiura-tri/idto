@@ -156,7 +156,7 @@ T TrajectoryOptimizer<T>::CalcCost(
 
   // Running cost
   for (int t = 0; t < num_steps(); ++t) {
-    std::cout<<"time step: "<<t;
+    //std::cout<<"time step: "<<t;
     q_err = q[t] - prob_.q_nom[t];
     v_err = v[t] - prob_.v_nom[t];
     std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
@@ -363,6 +363,7 @@ void TrajectoryOptimizer<T>::CalcContactForceContribution(
       compliant_fn = sigma * k * log(1 + exp(exponent));
     }
     const T fn = compliant_fn * dissipation_factor;
+    //std::cout<<"compliant_fn: "<<fn<<", between "<<bodyA.name()<<" and "<<bodyB.name()<<std::endl;
 
     // Tangential frictional component.
     // N.B. This model is algebraically equivalent to:
