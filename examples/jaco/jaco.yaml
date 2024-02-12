@@ -27,26 +27,26 @@ q_guess : [1.57, 1.7, 0.0, 4.8, 0.0, 4.5, 0.0,
            0.5, 0.1, 0.08]
 
 # Cost Weights
-Qq: [0, 0, 0, 0, 0, 0, 0,
-     10, 10, 10, 10,
-     10, 10, 10]
-Qv: [1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1,
-     1, 1, 1]
+Qq: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
+     1e-1, 1e-1, 1e-1, 1e-1,
+     1e-1, 1e-1, 1e-1]
+Qv: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
+     1e1, 1e1, 1e1,
+     1e1, 1e1, 1e1]
 R: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
-    10, 10, 10,
-    10, 10, 10]
+    1e2, 1e2, 1e2,
+    1e2, 1e2, 1e2]
 
-Qfq: [0, 0, 0, 0, 0, 0, 0,
-      10, 10, 10, 10,
-      10, 10, 10]
-Qfv: [1, 1, 1, 1, 1, 1, 1,
-      1, 1, 1,
-      1, 1, 1]
+Qfq: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
+      1e-1, 1e-1, 1e-1, 1e-1,
+      1e-1, 1e-1, 1e-1]
+Qfv: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
+      1e1, 1e1, 1e1,
+      1e1, 1e1, 1e1]
 
 # Problem definition parameters
 time_step : 0.05    # Discretization timestep (seconds)
-num_steps : 40      # number of timesteps
+num_steps : 20      # number of timesteps
 
 # Solver parameters
 max_iters : 50              # maximum Gauss-Newton iterations
@@ -70,7 +70,7 @@ gradients_method: "forward_differences"
 # Playback/visualization parameters
 play_target_trajectory : false
 play_initial_guess : false
-play_optimal_trajectory : false
+play_optimal_trajectory : true
 
 # Debugging parameters
 linesearch_plot_every_iteration : false
@@ -96,7 +96,7 @@ stiction_velocity: 0.05     # Regularization velocity, in m/s.
 mpc : true
 mpc_iters : 1
 controller_frequency : 20
-sim_time : 5
+sim_time : 15
 sim_time_step : 5e-3
 sim_realtime_rate : 0.0
 
@@ -105,3 +105,6 @@ Kp: [500, 500, 250, 500, 250, 250, 250,
      0, 0, 0, 0, 0, 0, 0]
 Kd: [50, 50, 25, 50, 25, 25, 25,
      0, 0, 0, 0, 0, 0]
+
+save_mpc_result_as_static_html: true
+static_html_filename: "/home/manabunishiura/idto/results.html"

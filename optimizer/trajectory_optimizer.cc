@@ -44,8 +44,10 @@ template <typename T>
 TrajectoryOptimizer<T>::TrajectoryOptimizer(const Diagram<T>* diagram,
                                             const MultibodyPlant<T>* plant,
                                             const ProblemDefinition& prob,
-                                            const SolverParameters& params)
-    : diagram_{diagram}, plant_(plant), prob_(prob), params_(params) {
+                                            const SolverParameters& params,
+                                            const bool time_varying_cost)
+    : diagram_{diagram}, plant_(plant), prob_(prob), params_(params),
+      time_varying_cost_(time_varying_cost) {
   // Workaround for when a plant context is not provided.
   // Valid context should be obtained with EvalPlantContext() instead.
   // TODO(amcastro-tri): get rid of this.
@@ -156,12 +158,16 @@ T TrajectoryOptimizer<T>::CalcCost(
 
   // Running cost
   for (int t = 0; t < num_steps(); ++t) {
-    //std::cout<<"time step: "<<t;
+    //std::cout<<"time step: "<<t<<std::endl;
     q_err = q[t] - prob_.q_nom[t];
     v_err = v[t] - prob_.v_nom[t];
-    std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
-    std::cout<<" v_err: "<<T(v_err.transpose() * prob_.Qv * v_err);
-    std::cout<<" tau_err: "<<T(tau[t].transpose() * prob_.R * tau[t])<<std::endl;
+    std::cout<<" q_nom["<<t<<"][0]"<<prob_.q_nom[t][0]<<", ";
+    std::cout<<" q_nom["<<t<<"][1]"<<prob_.q_nom[t][1]<<std::endl;
+    //std::cout<<" q["<<t<<"][0]"<<q[t][0]<<", ";
+    //std::cout<<" q["<<t<<"][1]"<<q[t][1]<<std::endl;
+    //std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
+    //std::cout<<" v_err: "<<T(v_err.transpose() * prob_.Qv * v_err);
+    //std::cout<<" tau_err: "<<T(tau[t].transpose() * prob_.R * tau[t])<<std::endl;
     cost += T(q_err.transpose() * prob_.Qq * q_err);
     cost += T(v_err.transpose() * prob_.Qv * v_err);
     cost += T(tau[t].transpose() * prob_.R * tau[t]);
@@ -2458,6 +2464,9 @@ SolverFlag TrajectoryOptimizer<double>::SolveFromWarmStart(
   // State variable stores q and everything that is computed from q
   TrajectoryOptimizerState<double>& state = warm_start->state;
   TrajectoryOptimizerState<double>& scratch_state = warm_start->scratch_state;
+  for (VectorX<double> q : state.q()) {
+    //std::cout<<"warm_start(last solution) state.q[0]: "<<q[0]<<", q[1]: "<<q[1]<<std::endl;
+  }
 
   // The update vector q_{k+1} = q_k + dq and full Newton step (for logging)
   VectorXd& dq = warm_start->dq;

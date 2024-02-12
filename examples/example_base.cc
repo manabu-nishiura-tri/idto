@@ -8,6 +8,7 @@
 #include "examples/mpc_controller.h"
 #include "examples/pd_plus_controller.h"
 #include <drake/common/fmt_eigen.h>
+#include <drake/common/text_logging.h>
 #include <drake/systems/primitives/discrete_time_delay.h>
 #include <drake/visualization/visualization_config_functions.h>
 
@@ -26,7 +27,10 @@ using pd_plus::PdPlusController;
 
 void TrajOptExample::RunExample(const std::string options_file,
                                 const std::vector<VectorXd> trajectory,
-                                const bool test) const {
+                                const std::vector<VectorXd> whole_trajectory,
+                                const double nominal_update_dt,
+                                const bool test,
+                                const bool time_varying_cost) const {
   // Load parameters from file
   TrajOptExampleParams default_options;
   TrajOptExampleParams options =
@@ -48,22 +52,29 @@ void TrajOptExample::RunExample(const std::string options_file,
 
   if (options.mpc) {
     // Run a simulation that uses the optimizer as a model predictive controller
-    RunModelPredictiveControl(options, trajectory);
+    RunModelPredictiveControl(options, trajectory, whole_trajectory,
+        nominal_update_dt, time_varying_cost);
   } else {
     // Solve a single instance of the optimization problem and play back the
     // result on the visualizer
-    SolveTrajectoryOptimization(options, trajectory);
+    SolveTrajectoryOptimization(options, trajectory, time_varying_cost);
   }
 }
 
 void TrajOptExample::RunModelPredictiveControl(
     const TrajOptExampleParams& options,
-    const std::vector<VectorXd> trajectory) const {
+    const std::vector<VectorXd> trajectory,
+    const std::vector<VectorXd> whole_trajectory,
+    const double nominal_update_dt,
+    const bool time_varying_cost) const {
   // Perform a full solve to convergence (as defined by YAML parameters) to
   // warm-start the first MPC iteration. Subsequent MPC iterations will be
   // warm-started based on the prior MPC iteration.
   TrajectoryOptimizerSolution<double> initial_solution =
-      SolveTrajectoryOptimization(options, trajectory);
+      SolveTrajectoryOptimization(options, trajectory, time_varying_cost);
+
+  drake::log()->info("Press enter to continue with MPC");
+  std::getchar();
 
   // Set up the system diagram for the simulator
   DiagramBuilder<double> builder;
@@ -94,7 +105,7 @@ void TrajOptExample::RunModelPredictiveControl(
 
   // Define the optimization problem
   ProblemDefinition opt_prob;
-  SetProblemDefinition(options, plant, &opt_prob);
+  SetProblemDefinition(options, plant, &opt_prob, trajectory, time_varying_cost);
 
   // Set MPC-specific solver parameters
   SolverParameters solver_params;
@@ -105,7 +116,8 @@ void TrajOptExample::RunModelPredictiveControl(
   const double replan_period = 1. / options.controller_frequency;
   auto controller = builder.AddSystem<ModelPredictiveController>(
       ctrl_diagram.get(), &ctrl_plant, opt_prob, initial_solution,
-      solver_params, replan_period);
+      solver_params, replan_period, whole_trajectory, nominal_update_dt,
+      time_varying_cost);
 
   // Create an interpolator to send samples from the optimal trajectory at a
   // faster rate
@@ -163,7 +175,8 @@ void TrajOptExample::RunModelPredictiveControl(
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Set up the simulation
-  plant.SetPositions(&plant_context, options.q_init);
+  //plant.SetPositions(&plant_context, options.q_init);
+  plant.SetPositions(&plant_context, trajectory[0]);
   plant.SetVelocities(&plant_context, options.v_init);
   drake::systems::Simulator<double> simulator(*diagram,
                                               std::move(diagram_context));
@@ -189,7 +202,8 @@ void TrajOptExample::RunModelPredictiveControl(
 
 TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
     const TrajOptExampleParams& options,
-    const std::vector<VectorXd> trajectory) const {
+    const std::vector<VectorXd> trajectory,
+    const bool time_varying_cost) const {
   // Create a system model
   // N.B. we need a whole diagram, including scene_graph, to handle contact
   DiagramBuilder<double> builder;
@@ -216,7 +230,7 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
   // Define the optimization problem
   ProblemDefinition opt_prob;
-  SetProblemDefinition(options, plant, &opt_prob);
+  SetProblemDefinition(options, plant, &opt_prob, trajectory, time_varying_cost);
 
   // Set our solver parameters
   SolverParameters solver_params;
@@ -247,7 +261,7 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
   // Solve the optimzation problem
   TrajectoryOptimizer<double> optimizer(diagram.get(), &plant, opt_prob,
-                                        solver_params);
+                                        solver_params, time_varying_cost);
   TrajectoryOptimizerSolution<double> solution;
   TrajectoryOptimizerStats<double> stats;
   ConvergenceReason reason;
@@ -334,6 +348,8 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
   // Play back the result on the visualizer
   if (options.play_optimal_trajectory) {
     PlayBackTrajectory(solution.q, options.time_step);
+    drake::log()->info(fmt::format("The warmstart trajectory can be viewed at {}",
+                                    meshcat_->web_url()));
   }
 
   return solution;
@@ -382,11 +398,14 @@ void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
 
 void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
                                           const MultibodyPlant<double>& plant,
-                                          ProblemDefinition* opt_prob) const {
+                                          ProblemDefinition* opt_prob,
+                                          std::vector<VectorXd> nom_trajectory,
+                                          const bool time_varying_cost) const {
   opt_prob->num_steps = options.num_steps;
 
   // Initial state
-  opt_prob->q_init = options.q_init;
+  //opt_prob->q_init = options.q_init;
+  opt_prob->q_init = nom_trajectory[0];
   opt_prob->v_init = options.v_init;
 
   // Cost weights
@@ -405,12 +424,22 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   }
 
   // Target state at each timestep
+  /*
   VectorXd q_nom_start = options.q_nom_start;
   VectorXd q_nom_end = options.q_nom_end;
   q_nom_start += q_nom_relative.cast<double>().cwiseProduct(options.q_init);
   q_nom_end += q_nom_relative.cast<double>().cwiseProduct(options.q_init);
   opt_prob->q_nom =
       MakeLinearInterpolation(q_nom_start, q_nom_end, options.num_steps + 1);
+  */
+  if (time_varying_cost) {
+    opt_prob->q_nom = nom_trajectory;
+  }
+  else {
+    opt_prob->q_nom =
+        MakeLinearInterpolation(nom_trajectory.back(), nom_trajectory.back(),
+            options.num_steps + 1);
+  }
 
   opt_prob->v_nom.push_back(opt_prob->v_init);
   for (int t = 1; t <= options.num_steps; ++t) {

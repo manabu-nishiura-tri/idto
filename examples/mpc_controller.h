@@ -72,7 +72,9 @@ class ModelPredictiveController : public LeafSystem<double> {
       const Diagram<double>* diagram, const MultibodyPlant<double>* plant,
       const ProblemDefinition& prob,
       const TrajectoryOptimizerSolution<double>& warm_start_solution,
-      const SolverParameters& params, const double replan_period);
+      const SolverParameters& params, const double replan_period,
+      const std::vector<VectorXd> whole_trajectory, const double nominal_update_period,
+      const bool time_varying_cost);
 
   const InputPort<double>& get_state_input_port() const {
     return this->get_input_port(state_input_port_);
@@ -145,6 +147,12 @@ class ModelPredictiveController : public LeafSystem<double> {
 
   // Index for the abstract state used to store optimal trajectories
   drake::systems::AbstractStateIndex stored_trajectory_;
+
+  const std::vector<VectorXd> whole_trajectory_;
+  const int whole_trajectory_length_;
+  const double nominal_update_period_;
+  mutable int traj_index{0};
+  mutable double last_nominal_update_time_{0.0};
 };
 
 /// A simple system block that recieves a StoredTrajectory (at a low frequency)

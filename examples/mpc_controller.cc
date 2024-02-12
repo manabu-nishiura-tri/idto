@@ -10,17 +10,22 @@ ModelPredictiveController::ModelPredictiveController(
     const Diagram<double>* diagram, const MultibodyPlant<double>* plant,
     const ProblemDefinition& prob,
     const TrajectoryOptimizerSolution<double>& warm_start_solution,
-    const SolverParameters& params, const double replan_period)
+    const SolverParameters& params, const double replan_period,
+    const std::vector<VectorXd> whole_trajectory, const double nominal_update_period,
+    const bool time_varying_cost)
     : time_step_(plant->time_step()),
       num_steps_(prob.num_steps + 1),
       nq_(plant->num_positions()),
       nv_(plant->num_velocities()),
       nu_(plant->num_actuators()),
       B_(plant->MakeActuationMatrix()),
-      optimizer_(diagram, plant, prob, params),
+      optimizer_(diagram, plant, prob, params, time_varying_cost),
       warm_start_(optimizer_.num_steps(), optimizer_.diagram(),
                   optimizer_.plant(), optimizer_.num_equality_constraints(),
-                  warm_start_solution.q, params.Delta0) {
+                  warm_start_solution.q, params.Delta0),
+      whole_trajectory_(whole_trajectory),
+      whole_trajectory_length_(whole_trajectory.size()),
+      nominal_update_period_(nominal_update_period) {
   // Abstract-valued discrete state stores an optimal trajectory
   StoredTrajectory initial_guess_traj;
   StoreOptimizerSolution(warm_start_solution, 0.0, &initial_guess_traj);
@@ -43,6 +48,7 @@ ModelPredictiveController::ModelPredictiveController(
 EventStatus ModelPredictiveController::UpdateAbstractState(
     const Context<double>& context, State<double>* state) const {
   std::cout << "Resolving at t=" << context.get_time() << std::endl;
+  double start_time = context.get_time();
 
   // Get the latest initial condition
   const VectorXd& x0 = EvalVectorInput(context, state_input_port_)->value();
@@ -61,6 +67,22 @@ EventStatus ModelPredictiveController::UpdateAbstractState(
 
   // Solve the trajectory optimization problem from the new initial condition
   optimizer_.ResetInitialConditions(q0, v0);
+
+  if (traj_index < (whole_trajectory_length_ - num_steps_) and \
+      start_time - last_nominal_update_time_ >= nominal_update_period_) {
+    std::cout<<"Updating nominal states."<<std::endl;
+    optimizer_.UpdateNominalStates(whole_trajectory_[num_steps_ + traj_index]);
+    traj_index += 1;
+    last_nominal_update_time_ = start_time;
+  }
+  else if (start_time - last_nominal_update_time_ >= nominal_update_period_) {
+    // Gradually setting all the nominal state to last_state from
+    // whole_trajectory_.
+    std::cout<<"Updating nominal states to final state."<<std::endl;
+    optimizer_.UpdateNominalStates(whole_trajectory_.back());
+    last_nominal_update_time_ = start_time;
+  }
+
   TrajectoryOptimizerStats<double> stats;
   TrajectoryOptimizerSolution<double> solution;
   optimizer_.SolveFromWarmStart(&warm_start_, &solution, &stats);

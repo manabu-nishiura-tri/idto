@@ -54,7 +54,8 @@ class TrajectoryOptimizer {
    */
   TrajectoryOptimizer(const Diagram<T>* diagram, const MultibodyPlant<T>* plant,
                       const ProblemDefinition& prob,
-                      const SolverParameters& params = SolverParameters{});
+                      const SolverParameters& params = SolverParameters{},
+                      const bool time_varying_cost = false);
 
   /**
    * Convienience function to get the timestep of this optimization problem.
@@ -458,14 +459,16 @@ class TrajectoryOptimizer {
   }
 
   void UpdateNominalStates(const VectorXd& new_nominal_state) {
-    //int q_nom_index = 0;
-    /*
-    for (int q_nom_index = 0; q_nom_index < prob_.q_nom.rows(); q_nom_index++) {
-      prob_.q_nom[q_nom_index] = new_nominal_state[q_nom_index];
+    if (time_varying_cost_) {
+      for (size_t i = 0; i < prob_.q_nom.size() - 1; i++) {
+        prob_.q_nom[i] = prob_.q_nom[i+1];
+      }
+      prob_.q_nom.back() = new_nominal_state;
     }
-    */    
-    for (VectorXd& qt_nom : prob_.q_nom) {
-      qt_nom = new_nominal_state; 
+    else {
+      for (VectorXd& qt_nom : prob_.q_nom) {
+        qt_nom = new_nominal_state; 
+      }
     }
   }
 
@@ -1106,6 +1109,8 @@ class TrajectoryOptimizer {
   const MultibodyPlant<drake::AutoDiffXd>* plant_ad_;
   std::unique_ptr<TrajectoryOptimizer<drake::AutoDiffXd>> optimizer_ad_;
   std::unique_ptr<TrajectoryOptimizerState<drake::AutoDiffXd>> state_ad_;
+
+  const bool time_varying_cost_{false};
 };
 
 // Declare template specializations

@@ -17,6 +17,7 @@ cc_binary(
         "//utils:find_resource",
         "@drake//multibody/parsing",
         "@drake//multibody/plant",
+        "@drake//common/yaml",
         "@gflags"
     ],
 )

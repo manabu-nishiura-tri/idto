@@ -71,7 +71,10 @@ class TrajOptExample {
    *   - num_threads = 1; */
   void RunExample(const std::string options_file,
                   const std::vector<VectorXd> trajectory,
-                  const bool test = false) const;
+                  const std::vector<VectorXd> whole_trajectory,
+                  const double nominal_update_dt,
+                  const bool test = false,
+                  const bool time_varying_cost = false) const;
 
   /**
    * Solve the optimization problem, as defined by the parameters in the given
@@ -83,7 +86,8 @@ class TrajOptExample {
    */
   TrajectoryOptimizerSolution<double> SolveTrajectoryOptimization(
       const TrajOptExampleParams& options,
-      const std::vector<VectorXd> trajectory) const;
+      const std::vector<VectorXd> trajectory,
+      const bool time_varying_cost) const;
 
   /**
    * Use the optimizer as an MPC controller in simulation.
@@ -92,7 +96,10 @@ class TrajOptExample {
    * parameters, etc.
    */
   void RunModelPredictiveControl(const TrajOptExampleParams& options,
-                                 const std::vector<VectorXd> trajectory) const;
+                                 const std::vector<VectorXd> trajectory,
+                                 const std::vector<VectorXd> whole_trajectory,
+                                 const double nominal_update_dt,
+                                 const bool time_varying_cost) const;
 
   /**
    * Set an optimization problem from example options which were loaded from
@@ -104,7 +111,9 @@ class TrajOptExample {
    */
   void SetProblemDefinition(const TrajOptExampleParams& options,
                             const MultibodyPlant<double>& plant,
-                            ProblemDefinition* opt_prob) const;
+                            ProblemDefinition* opt_prob,
+                            std::vector<VectorXd> nom_trajectory,
+                            const bool time_varying_cost) const;
 
   /**
    * Set solver parameters (used to pass options to the optimizer)
