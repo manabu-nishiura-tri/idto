@@ -176,7 +176,14 @@ void TrajOptExample::RunModelPredictiveControl(
 
   // Set up the simulation
   //plant.SetPositions(&plant_context, options.q_init);
-  plant.SetPositions(&plant_context, trajectory[0]);
+  std::cout<<"Setting object pose from yaml file.";
+  std::cout<<"\tobs: "<<options.q_init[11]<<", "<<options.q_init[12]<<", ";
+  std::cout<<options.q_init[13]<<std::endl;
+  auto mixed_q_init = trajectory[0];
+  mixed_q_init[11] = options.q_init[11];
+  mixed_q_init[12] = options.q_init[12];
+  mixed_q_init[13] = options.q_init[13];
+  plant.SetPositions(&plant_context, mixed_q_init);
   plant.SetVelocities(&plant_context, options.v_init);
   drake::systems::Simulator<double> simulator(*diagram,
                                               std::move(diagram_context));

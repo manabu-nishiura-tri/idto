@@ -136,7 +136,7 @@ class JacoExample : public TrajOptExample {
         "idto/examples/models/j2s7s300_arm_hydro_collision.sdf");
     ModelInstanceIndex jaco = Parser(plant).AddModels(robot_file)[0];
     RigidTransformd X_jaco(RollPitchYaw<double>(0, 0, M_PI_2),
-                           Vector3d(0, 0., 0.11));
+                           Vector3d(0, 0., 0.15));
     plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base"),
                       X_jaco);
     plant->set_gravity_enabled(jaco, false);

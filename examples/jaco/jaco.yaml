@@ -8,7 +8,7 @@
 # Initial state
 q_init : [1.57, 1.7, 0.0, 4.8, 0.0, 4.5, 0.0,   # arm positions
           1.0, 0.0, 0.0, 0.0,                  # box orientation
-          0.5, 0.1, 0.08]                       # box position
+          0.45, 0.0, 0.09]                       # box position
 v_init : [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -27,22 +27,22 @@ q_guess : [1.57, 1.7, 0.0, 4.8, 0.0, 4.5, 0.0,
            0.5, 0.1, 0.08]
 
 # Cost Weights
-Qq: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
-     1e-1, 1e-1, 1e-1, 1e-1,
-     1e-1, 1e-1, 1e-1]
-Qv: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
-     1e1, 1e1, 1e1,
+Qq: [1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2,
+     1e1, 1e1, 1e1, 1e1,
      1e1, 1e1, 1e1]
+Qv: [1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1,
+     1e-2, 1e-2, 1e-2,
+     1e-2, 1e-2, 1e-2]
 R: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
     1e2, 1e2, 1e2,
     1e2, 1e2, 1e2]
 
-Qfq: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
-      1e-1, 1e-1, 1e-1, 1e-1,
-      1e-1, 1e-1, 1e-1]
-Qfv: [1e1, 1e1, 1e1, 1e1, 1e1, 1e1, 1e1,
-      1e1, 1e1, 1e1,
+Qfq: [1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2, 1e-2,
+      1e1, 1e1, 1e1, 1e1,
       1e1, 1e1, 1e1]
+Qfv: [1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1, 1e-1,
+      1e-2, 1e-2, 1e-2,
+      1e-2, 1e-2, 1e-2]
 
 # Problem definition parameters
 time_step : 0.05    # Discretization timestep (seconds)
@@ -78,7 +78,7 @@ print_debug_data : false
 save_solver_stats_csv : true
 
 # Contact model parameters. 
-contact_stiffness : 300     # normal force stiffness, in N/m
+contact_stiffness : 10     # normal force stiffness, in N/m
 dissipation_velocity : 0.1  # Hunt & Crossley-like model parameter, in m/s.
 
 # Amount of smoothing (and therefore force at a distance) to apply when
@@ -86,7 +86,7 @@ dissipation_velocity : 0.1  # Hunt & Crossley-like model parameter, in m/s.
 # randomized smoothing, assuming that signed distances are drawn from a logistic
 # distirbution with the smoothing factor as the scale parameter. Higher values
 # mean more smoothing and more force at a distance. 
-smoothing_factor : 0.005
+smoothing_factor : 0.0001
 
 # Friction
 friction_coefficient : 0.5  # Coefficient of friction.
