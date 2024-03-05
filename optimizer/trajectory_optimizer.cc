@@ -75,6 +75,8 @@ TrajectoryOptimizer<T>::TrajectoryOptimizer(const Diagram<T>* diagram,
   }
 
   // Must have a target position and velocity specified for each time step
+  std::cout<<"prob.q_nom.size: "<<prob.q_nom.size()<<std::endl;
+  std::cout<<"num_steps: "<<num_steps() + 1<<std::endl;
   DRAKE_DEMAND(static_cast<int>(prob.q_nom.size()) == (num_steps() + 1));
   DRAKE_DEMAND(static_cast<int>(prob.v_nom.size()) == (num_steps() + 1));
 
@@ -155,23 +157,64 @@ T TrajectoryOptimizer<T>::CalcCost(
   T cost = 0;
   VectorX<T>& q_err = workspace->q_size_tmp1;
   VectorX<T>& v_err = workspace->v_size_tmp1;
+  T q_err_cost = 0;
+  T v_err_cost = 0;
+  T tau_err_cost = 0;
+  T tau_err_actuated_cost = 0;
+  T tau_err_unactuated_cost = 0;
+  T taux_cost = 0;
+  T tauy_cost = 0;
+  T tauz_cost = 0;
+  T fx_cost = 0;
+  T fy_cost = 0;
+  T fz_cost = 0;
+  T q_f_cost = 0;
+  T v_f_cost = 0;
 
   // Running cost
   for (int t = 0; t < num_steps(); ++t) {
     //std::cout<<"time step: "<<t<<std::endl;
     q_err = q[t] - prob_.q_nom[t];
     v_err = v[t] - prob_.v_nom[t];
-    std::cout<<" q_nom["<<t<<"][0]"<<prob_.q_nom[t][0]<<", ";
-    std::cout<<" q_nom["<<t<<"][1]"<<prob_.q_nom[t][1]<<std::endl;
+    //std::cout<<" q_nom["<<t<<"][0]"<<prob_.q_nom[t][0]<<", ";
+    //std::cout<<" q_nom["<<t<<"][1]"<<prob_.q_nom[t][1]<<std::endl;
     //std::cout<<" q["<<t<<"][0]"<<q[t][0]<<", ";
     //std::cout<<" q["<<t<<"][1]"<<q[t][1]<<std::endl;
-    //std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
-    //std::cout<<" v_err: "<<T(v_err.transpose() * prob_.Qv * v_err);
-    //std::cout<<" tau_err: "<<T(tau[t].transpose() * prob_.R * tau[t])<<std::endl;
+    /*
+    std::cout<<" q_err: "<<T(q_err.transpose() * prob_.Qq * q_err);
+    std::cout<<" v_err: "<<T(v_err.transpose() * prob_.Qv * v_err);
+    std::cout<<" tau_err: "<<T(tau[t].transpose() * prob_.R * tau[t])<<std::endl;
+    std::cout<<" tau_err_actuated: "<<T(tau[t].head(14).transpose() * prob_.R.topLeftCorner(14, 14) * tau[t].head(14));
+    std::cout<<" tau_err_unacutated: "<<T(tau[t].tail(6).transpose() * prob_.R.bottomRightCorner(6, 6) * tau[t].tail(6))<<std::endl;
+    std::cout<<" taux: "<<T(tau[t](14) * prob_.R.row(14) * tau[t]);
+    std::cout<<" tauy: "<<T(tau[t](15) * prob_.R.row(15) * tau[t]);
+    std::cout<<" tauz: "<<T(tau[t](16) * prob_.R.row(16) * tau[t]);
+    std::cout<<" fx: "<<T(tau[t](17) * prob_.R.row(17) * tau[t]);
+    std::cout<<" fy: "<<T(tau[t](18) * prob_.R.row(18) * tau[t]);
+    std::cout<<" fz: "<<T(tau[t](19) * prob_.R.row(19) * tau[t])<<std::endl;
+    */
     cost += T(q_err.transpose() * prob_.Qq * q_err);
     cost += T(v_err.transpose() * prob_.Qv * v_err);
     cost += T(tau[t].transpose() * prob_.R * tau[t]);
+
+    q_err_cost += T(q_err.transpose() * prob_.Qq * q_err);
+    v_err_cost += T(v_err.transpose() * prob_.Qv * v_err);
+    tau_err_cost += T(tau[t].transpose() * prob_.R * tau[t]);
+    tau_err_actuated_cost += T(tau[t].head(14).transpose() * prob_.R.topLeftCorner(14, 14) * tau[t].head(14));
+    tau_err_unactuated_cost += T(tau[t].tail(6).transpose() * prob_.R.bottomRightCorner(6, 6) * tau[t].tail(6));
+    taux_cost += T(tau[t](14) * prob_.R.row(14) * tau[t]);
+    tauy_cost += T(tau[t](15) * prob_.R.row(15) * tau[t]);
+    tauz_cost += T(tau[t](16) * prob_.R.row(16) * tau[t]);
+    fx_cost += T(tau[t](17) * prob_.R.row(17) * tau[t]);
+    fy_cost += T(tau[t](18) * prob_.R.row(18) * tau[t]);
+    fz_cost += T(tau[t](19) * prob_.R.row(19) * tau[t]);
   }
+
+  q_err_cost *= time_step();
+  v_err_cost *= time_step();
+  tau_err_cost *= time_step();
+  tau_err_actuated_cost *= time_step();
+  tau_err_unactuated_cost *= time_step();
 
   // Scale running cost by dt (so the optimization problem we're solving doesn't
   // change so dramatically when we change the time step).
@@ -182,6 +225,17 @@ T TrajectoryOptimizer<T>::CalcCost(
   v_err = v[num_steps()] - prob_.v_nom[num_steps()];
   cost += T(q_err.transpose() * prob_.Qf_q * q_err);
   cost += T(v_err.transpose() * prob_.Qf_v * v_err);
+  q_f_cost += T(q_err.transpose() * prob_.Qf_q * q_err);
+  v_f_cost += T(v_err.transpose() * prob_.Qf_v * v_err);
+
+  printf("| %6.3f ", cost);
+  printf("| %8.3f ", q_err_cost);
+  printf("| %8.3f ", q_f_cost);
+  printf("| %8.3f ", v_err_cost);
+  printf("| %8.3f ", v_f_cost);
+  printf("| %6.3f ", tau_err_cost);
+  printf("| %6.3f ", tau_err_actuated_cost);
+  printf("| %6.3f |\n", tau_err_unactuated_cost);
 
   return cost;
 }
@@ -2259,8 +2313,13 @@ SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
     std::cout << "-------------------------------------------------------------"
                  "----------------------"
               << std::endl;
+    /*
     std::cout << "|  iter  |   cost   |  alpha  |  LS_iters  |  time (s)  |  "
                  "|g|/cost  |    |h|     |"
+              << std::endl;
+    */
+    std::cout << "|  iter  |   cost   |  q_err  |  v_err  |  tau_err  |  "
+                 "tau_actuated  |  tau_underac  |"
               << std::endl;
     std::cout << "-------------------------------------------------------------"
                  "----------------------"
@@ -2332,6 +2391,7 @@ SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
     iter_time = std::chrono::high_resolution_clock::now() - iter_start_time;
 
     // Nice little printout of our problem data
+    /*
     if (params_.verbose) {
       printf("| %6d ", k);
       printf("| %8.3f ", cost);
@@ -2341,6 +2401,7 @@ SolverFlag TrajectoryOptimizer<double>::SolveWithLinesearch(
       printf("| %10.3e ", g.norm() / cost);
       printf("| %10.3e |\n", h.norm());
     }
+    */
 
     // Print additional debuging information
     if (params_.print_debug_data) {
@@ -2491,9 +2552,12 @@ SolverFlag TrajectoryOptimizer<double>::SolveFromWarmStart(
   const std::string printout_labels =
       "|  iter  |   cost   |    Δ    |    ρ    |  time (s)  |  |g|/cost  | "
       "dL_dq/cost |    |h|     |";
+  const std::string printout_ic_labels =
+      "|   cost   |  q_err  |  qf_err  |  v_err  |  vf_err  |  tau_err  |  "
+      "tau_actuated  |  tau_underac  |";
 
   double previous_cost = EvalCost(state);
-  std::cout<<" cost of gqdp trajectory cost: "<<previous_cost<<std::endl;
+  std::cout<<" cost of previous solution: "<<previous_cost<<std::endl;
   while (k < params_.max_iterations) {
     // Obtain the candiate update dq
     tr_constraint_active = CalcDoglegPoint(state, Delta, &dq, &dqH);
@@ -2574,14 +2638,17 @@ SolverFlag TrajectoryOptimizer<double>::SolveFromWarmStart(
       if ((k % 50) == 0) {
         // Refresh the labels for easy reading
         std::cout << separator_bar << std::endl;
-        std::cout << printout_labels << std::endl;
+        //std::cout << printout_labels << std::endl;
+        std::cout << printout_ic_labels << std::endl;
         std::cout << separator_bar << std::endl;
       }
+      /*
       std::cout << fmt::format(
           "| {:>6} | {:>8.3g} | {:>7.2} | {:>7.3} | {:>10.5} | {:>10.5} | "
           "{:>10.4} | {:>10.4} |\n",
           k, cost, Delta, rho, iter_time.count(), g.norm() / cost, dL_dq,
           h.norm());
+      */
     }
 
     // Record statistics from this iteration

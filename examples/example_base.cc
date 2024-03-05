@@ -224,6 +224,8 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
   auto diagram = builder.Build();
 
   // Check sizes of things we load from YAML
+  std::cout<<"options.q_init.size(): "<<options.q_init.size()<<std::endl;
+  std::cout<<"nq: "<<nq<<std::endl;
   DRAKE_DEMAND(options.q_init.size() == nq);
   DRAKE_DEMAND(options.v_init.size() == nv);
   DRAKE_DEMAND(options.q_nom_start.size() == nq);
