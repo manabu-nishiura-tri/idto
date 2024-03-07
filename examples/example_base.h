@@ -89,6 +89,9 @@ class TrajOptExample {
       const std::vector<VectorXd> trajectory,
       const bool time_varying_cost) const;
 
+  TrajectoryOptimizerSolution<double> SolveTrajectoryOptimization(
+      const TrajOptExampleParams& options) const;
+
   /**
    * Use the optimizer as an MPC controller in simulation.
    *
@@ -114,6 +117,10 @@ class TrajOptExample {
                             ProblemDefinition* opt_prob,
                             std::vector<VectorXd> nom_trajectory,
                             const bool time_varying_cost) const;
+
+  void SetProblemDefinition(const TrajOptExampleParams& options,
+                            const MultibodyPlant<double>& plant,
+                            ProblemDefinition* opt_prob) const;
 
   /**
    * Set solver parameters (used to pass options to the optimizer)

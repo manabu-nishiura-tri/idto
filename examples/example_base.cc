@@ -364,6 +364,153 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
   return solution;
 }
 
+TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
+    const TrajOptExampleParams& options) const {
+  // Create a system model
+  // N.B. we need a whole diagram, including scene_graph, to handle contact
+  DiagramBuilder<double> builder;
+  MultibodyPlantConfig config;
+  config.time_step = options.time_step;
+  auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
+  CreatePlantModel(&plant);
+  plant.Finalize();
+  const int nq = plant.num_positions();
+  const int nv = plant.num_velocities();
+  auto diagram = builder.Build();
+
+  // Check sizes of things we load from YAML
+  DRAKE_DEMAND(options.q_init.size() == nq);
+  DRAKE_DEMAND(options.v_init.size() == nv);
+  DRAKE_DEMAND(options.q_nom_start.size() == nq);
+  DRAKE_DEMAND(options.q_nom_end.size() == nq);
+  DRAKE_DEMAND(options.q_guess.size() == nq);
+  DRAKE_DEMAND(options.Qq.size() == nq);
+  DRAKE_DEMAND(options.Qv.size() == nv);
+  DRAKE_DEMAND(options.R.size() == nv);
+  DRAKE_DEMAND(options.Qfq.size() == nq);
+  DRAKE_DEMAND(options.Qfv.size() == nv);
+
+  // Define the optimization problem
+  ProblemDefinition opt_prob;
+  SetProblemDefinition(options, plant, &opt_prob);
+
+  // Set our solver parameters
+  SolverParameters solver_params;
+  SetSolverParameters(options, &solver_params);
+
+  // Establish an initial guess
+  std::vector<VectorXd> q_guess = MakeLinearInterpolation(
+      opt_prob.q_init, options.q_guess, opt_prob.num_steps + 1);
+  NormalizeQuaternions(plant, &q_guess);
+
+  // N.B. This should always be the case, and is checked by the solver. However,
+  // sometimes floating point + normalization stuff makes q_guess != q_init, so
+  // we'll just doubly enforce that here
+  DRAKE_DEMAND((q_guess[0] - opt_prob.q_init).norm() < 1e-8);
+  q_guess[0] = opt_prob.q_init;
+
+  // Visualize the target trajectory and initial guess, if requested
+  if (options.play_target_trajectory) {
+    PlayBackTrajectory(opt_prob.q_nom, options.time_step);
+  }
+  if (options.play_initial_guess) {
+    PlayBackTrajectory(q_guess, options.time_step);
+  }
+
+  // Solve the optimzation problem
+  TrajectoryOptimizer<double> optimizer(diagram.get(), &plant, opt_prob,
+                                        solver_params);
+  TrajectoryOptimizerSolution<double> solution;
+  TrajectoryOptimizerStats<double> stats;
+  ConvergenceReason reason;
+  SolverFlag status = optimizer.Solve(q_guess, &solution, &stats, &reason);
+  if (status == SolverFlag::kSuccess) {
+    std::cout << "Solved in " << stats.solve_time << " seconds." << std::endl;
+  } else if (status == SolverFlag::kMaxIterationsReached) {
+    std::cout << "Maximum iterations reached in " << stats.solve_time
+              << " seconds." << std::endl;
+  } else {
+    std::cout << "Solver failed!" << std::endl;
+  }
+
+  std::cout << "Convergence reason: "
+            << DecodeConvergenceReasons(reason) + ".\n";
+
+  // Report maximum torques on all DoFs
+  VectorXd tau_max = VectorXd::Zero(nv);
+  VectorXd abs_tau_t = VectorXd::Zero(nv);
+  for (int t = 0; t < options.num_steps; ++t) {
+    abs_tau_t = solution.tau[t].cwiseAbs();
+    for (int i = 0; i < nv; ++i) {
+      if (abs_tau_t(i) > tau_max(i)) {
+        tau_max(i) = abs_tau_t(i);
+      }
+    }
+  }
+  std::cout << std::endl;
+  std::cout << fmt::format("Max torques: {}",
+                           drake::fmt_eigen(tau_max.transpose()))
+            << std::endl;
+
+  // Report maximum actuated and unactuated torques
+  // TODO(vincekurtz): deal with the fact that B is not well-defined for some
+  // systems, such as the block pusher and floating box examples.
+  const MatrixXd B = plant.MakeActuationMatrix();
+  double tau_max_unactuated = 0;
+  double tau_max_actuated = 0;
+  for (int i = 0; i < nv; ++i) {
+    if (B.row(i).sum() == 0) {
+      if (tau_max(i) > tau_max_unactuated) {
+        tau_max_unactuated = tau_max(i);
+      }
+    } else {
+      if (tau_max(i) > tau_max_actuated) {
+        tau_max_actuated = tau_max(i);
+      }
+    }
+  }
+
+  std::cout << std::endl;
+  std::cout << "Max actuated torque   : " << tau_max_actuated << std::endl;
+  std::cout << "Max unactuated torque : " << tau_max_unactuated << std::endl;
+
+  // Report desired and final state
+  std::cout << std::endl;
+  std::cout << fmt::format("q_nom[T] : {}",
+                           drake::fmt_eigen(
+                               opt_prob.q_nom[options.num_steps].transpose()))
+            << std::endl;
+  std::cout << fmt::format(
+                   "q[T]     : {}",
+                   drake::fmt_eigen(solution.q[options.num_steps].transpose()))
+            << std::endl;
+  std::cout << std::endl;
+  std::cout << fmt::format("v_nom[T] : {}",
+                           drake::fmt_eigen(
+                               opt_prob.v_nom[options.num_steps].transpose()))
+            << std::endl;
+  std::cout << fmt::format(
+                   "v[T]     : {}",
+                   drake::fmt_eigen(solution.v[options.num_steps].transpose()))
+            << std::endl;
+
+  // Print speed profiling info
+  std::cout << std::endl;
+  std::cout << TableOfAverages() << std::endl;
+
+  // Save stats to CSV for later plotting
+  if (options.save_solver_stats_csv) {
+    stats.SaveToCsv("solver_stats.csv");
+  }
+
+  // Play back the result on the visualizer
+  if (options.play_optimal_trajectory) {
+    PlayBackTrajectory(solution.q, options.time_step);
+  }
+
+  return solution;
+}
+
 void TrajOptExample::PlayBackTrajectory(const std::vector<VectorXd>& q,
                                         const double time_step) const {
   // Create a system diagram that includes the plant and is connected to
@@ -468,6 +615,58 @@ void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
   NormalizeQuaternions(plant, &opt_prob->q_nom);
   NormalizeQuaternions(plant, &opt_prob->q_init);
 }
+
+void TrajOptExample::SetProblemDefinition(const TrajOptExampleParams& options,
+                                          const MultibodyPlant<double>& plant,
+                                          ProblemDefinition* opt_prob) const {
+  opt_prob->num_steps = options.num_steps;
+
+  // Initial state
+  opt_prob->q_init = options.q_init;
+  opt_prob->v_init = options.v_init;
+
+  // Cost weights
+  opt_prob->Qq = options.Qq.asDiagonal();
+  opt_prob->Qv = options.Qv.asDiagonal();
+  opt_prob->Qf_q = options.Qfq.asDiagonal();
+  opt_prob->Qf_v = options.Qfv.asDiagonal();
+  opt_prob->R = options.R.asDiagonal();
+
+  // Check which DoFs the cost is updated relative to the initial condition for
+  VectorX<bool> q_nom_relative = options.q_nom_relative_to_q_init;
+  if (q_nom_relative.size() == 0) {
+    // If not specified, assume the nominal trajectory is not relative to the
+    // initial conditions.
+    q_nom_relative = VectorX<bool>::Constant(options.q_init.size(), false);
+  }
+
+  // Target state at each timestep
+  VectorXd q_nom_start = options.q_nom_start;
+  VectorXd q_nom_end = options.q_nom_end;
+  q_nom_start += q_nom_relative.cast<double>().cwiseProduct(options.q_init);
+  q_nom_end += q_nom_relative.cast<double>().cwiseProduct(options.q_init);
+  opt_prob->q_nom =
+      MakeLinearInterpolation(q_nom_start, q_nom_end, options.num_steps + 1);
+
+  opt_prob->v_nom.push_back(opt_prob->v_init);
+  for (int t = 1; t <= options.num_steps; ++t) {
+    if (options.q_init.size() == options.v_init.size()) {
+      // No quaternion DoFs, so compute v_nom from q_nom
+      opt_prob->v_nom.push_back((opt_prob->q_nom[t] - opt_prob->q_nom[t - 1]) /
+                                options.time_step);
+    } else {
+      // Set v_nom = v_init for systems with quaternion DoFs
+      // TODO(vincekurtz): enable better specification of v_nom for
+      // floating-base systems
+      opt_prob->v_nom.push_back(opt_prob->v_init);
+    }
+  }
+
+  // Normalize quaternions in the reference and initial condition
+  NormalizeQuaternions(plant, &opt_prob->q_nom);
+  NormalizeQuaternions(plant, &opt_prob->q_init);
+}
+
 
 void TrajOptExample::SetSolverParameters(
     const TrajOptExampleParams& options,
