@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="rolled_yoga_mat">
+
+    <!-- This is a model of an 3D printed cube. -->
+    <!-- The model for a solid cube of uniform density. -->
+    <link name="mat">
+      <inertial>
+        <mass>0.55</mass>
+        <inertia>
+          <ixx>0.02838</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.02838</iyy>
+          <iyz>0</iyz>
+          <izz>0.00176</izz>
+        </inertia>
+      </inertial>
+
+      <visual name="mat_visual">
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.6</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.9 0.0 0.0 0.8</diffuse>
+        </material>
+      </visual>
+
+      <collision name="collision">
+        <geometry>
+          <cylinder>
+            <radius>0.08</radius>
+            <length>0.6</length>
+          </cylinder>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1e5</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>5</drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>0.8</drake:mu_dynamic>
+          <drake:mu_static>0.8</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+
+    </link>
+  </model>
+</sdf>
