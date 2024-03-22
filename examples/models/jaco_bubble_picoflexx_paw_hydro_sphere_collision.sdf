@@ -41,21 +41,13 @@
           <emissive>0 0 0 1</emissive>
         </material>
       </visual>
+      <!--
       <collision name="base_bubble_ellipsoid">
         <pose>-0.095 0.09 0 1.5707963267948966 0 0.3</pose>
         <geometry>
-          <!-- Ellipsoid dimensions along its principal axes set to match CAD
-                   drawings. -->
           <sphere>
             <radius>0.0415</radius>
           </sphere>
-          <!--
-          <drake:ellipsoid>
-            <a>0.04165</a>
-            <b>0.04165</b>
-            <c>0.0625</c>
-          </drake:ellipsoid>
-          -->
         </geometry>
         <drake:proximity_properties>
           <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
@@ -98,6 +90,63 @@
         <geometry>
           <sphere>
             <radius>0.02</radius>
+          </sphere>
+        </geometry>geometry&gt;
+        <material>
+          <diffuse>0 1 0 0.8</diffuse>
+        </material>
+      </visual>
+      -->
+
+      <collision name="bubble_1">
+        <pose>-0.11 0.12 0 0 0 0</pose>pose&gt;
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>geometry&gt;
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>5e7</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+      <visual name="bubble_1">
+        <pose>-0.11 0.12 0 0 0 0</pose>pose&gt;
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>geometry&gt;
+        <material>
+          <diffuse>0 1 0 0.8</diffuse>
+        </material>
+      </visual>
+
+      <collision name="bubble_2">
+        <pose>-0.09 0.065 0 0 0 0</pose>pose&gt;
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
+          </sphere>
+        </geometry>geometry&gt;
+        <drake:proximity_properties>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>5e7</drake:hydroelastic_modulus>
+          <drake:hunt_crossley_dissipation>1.25</drake:hunt_crossley_dissipation>
+          <drake:mu_dynamic>1.0</drake:mu_dynamic>
+          <drake:mu_static>1.0</drake:mu_static>
+        </drake:proximity_properties>
+      </collision>
+      <visual name="bubble_2">
+        <pose>-0.09 0.065 0 0 0 0</pose>pose&gt;
+        <geometry>
+          <sphere>
+            <radius>0.03</radius>
           </sphere>
         </geometry>geometry&gt;
         <material>

@@ -326,7 +326,9 @@ TrajectoryOptimizerSolution<double> TrajOptExample::SolveTrajectoryOptimization(
 
   // Play back the result on the visualizer
   if (options.play_optimal_trajectory) {
+    std::cout<<"Trying to publish optimal trajectory."<<std::endl;
     PlayBackTrajectory(solution.q, options.time_step);
+    std::cin.get();
   }
 
   return solution;
